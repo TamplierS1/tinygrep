@@ -8,6 +8,10 @@
 
 ## Usage
 
-1st argument: the string you want to find.  
-2nd argument: the file you want to search in.  
-`tinygrep *search_str* *filename*`
+Search a single `file` for a `string`:  
+
+`tinygrep string file`  
+
+Search a `directory` for a `string` (recursively):  
+
+`tinygrep string directory`

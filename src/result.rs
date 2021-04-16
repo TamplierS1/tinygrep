@@ -1,19 +1,31 @@
 use colored::*;
 
-pub struct Result<'a>
+#[derive(Clone)]
+pub struct SearchResult
 {
     pub index: usize,
-    pub line: &'a str,
-    pub word: &'a str,
-    pub filename: &'a str,
+    pub line: String,
+    pub search_str: String,
+    pub filename: String,
 }
 
-impl Result<'_>
+impl SearchResult
 {
     pub fn format(&self) -> String
     {
-        let filename = self.filename.bright_magenta().italic();
+        // Filename is printed in 'tinygrep::display'
         let line_num = format!("{}:", self.index).bright_green();
-        format!("{}\n{} {}", filename, line_num, self.line.bright_white())
+
+        // There is no need for pattern matching, we know that the line
+        // contains the word
+        let (before, after) = self.line.split_once(&self.search_str).unwrap();
+
+        format!(
+            "{}: {}{}{}",
+            line_num,
+            before.bright_white(),
+            self.search_str.bright_red(),
+            after.bright_white()
+        )
     }
 }
