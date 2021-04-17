@@ -20,94 +20,70 @@ pub struct DirQuery<'a>
 
 impl FileQuery<'_>
 {
-    pub fn new(args: &Vec<String>) -> FileQuery
+    pub fn new(args: &Vec<String>) -> Result<FileQuery, String>
     {
-        FileQuery::check_args(args);
+        FileQuery::check_args(args)?;
         let path = Path::new(&args[2]);
 
-        FileQuery {
+        Ok(FileQuery {
             search_str: &args[1].trim(),
             path,
             name: path.file_name().unwrap().to_str().unwrap(),
-            contents: FileQuery::read_contents(path),
-        }
+            contents: FileQuery::read_contents(path)?,
+        })
     }
 
-    fn check_args(args: &Vec<String>)
+    fn check_args(args: &Vec<String>) -> Result<(), String>
     {
-        if args.len() != 3
-        {
-            panic!(
-                "Error: {} arguments were provided when 3 are required.",
-                args.len()
-            )
-        }
-
         let path = Path::new(&args[2]);
-
-        if !path.exists()
-        {
-            panic!(
-                "Error: {} does not exist.",
-                String::from(path.to_str().unwrap())
-            );
-        }
 
         if !path.is_file()
         {
-            panic!(
+            return Err(format!(
                 "Error: {} is not a file.",
                 String::from(path.to_str().unwrap())
-            );
+            ));
         }
+
+        Ok(())
     }
 
-    fn read_contents(filename: &Path) -> String
+    fn read_contents(filename: &Path) -> Result<String, String>
     {
-        fs::read_to_string(filename).expect("Error: something went wrong.")
+        match fs::read_to_string(filename)
+        {
+            Ok(contents) => Ok(contents),
+            Err(e) => Err(e.to_string()),
+        }
     }
 }
 
 impl DirQuery<'_>
 {
-    pub fn new(args: &Vec<String>) -> DirQuery
+    pub fn new(args: &Vec<String>) -> Result<DirQuery, String>
     {
-        DirQuery::check_args(args);
+        DirQuery::check_args(args)?;
         let path = Path::new(&args[2]);
 
-        DirQuery {
+        Ok(DirQuery {
             search_str: &args[1].trim(),
             path,
             name: path.file_name().unwrap().to_str().unwrap(),
-        }
+        })
     }
 
-    fn check_args(args: &Vec<String>)
+    fn check_args(args: &Vec<String>) -> Result<(), String>
     {
-        if args.len() != 3
-        {
-            panic!(
-                "Error: {} arguments were provided when 3 are required.",
-                args.len()
-            )
-        }
-
         let path = Path::new(&args[2]);
-
-        if !path.exists()
-        {
-            panic!(
-                "Error: {} does not exist.",
-                String::from(path.to_str().unwrap())
-            );
-        }
 
         if !path.is_dir()
         {
-            panic!(
+            return Err(format!(
                 "Error: {} is not a directory.",
                 String::from(path.to_str().unwrap())
-            );
+            ));
         }
+
+        Ok(())
     }
 }
