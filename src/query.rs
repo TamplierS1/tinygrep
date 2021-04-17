@@ -61,10 +61,7 @@ impl FileQuery<'_>
             );
         }
     }
-}
 
-impl FileQuery<'_>
-{
     fn read_contents(filename: &Path) -> String
     {
         fs::read_to_string(filename).expect("Error: something went wrong.")

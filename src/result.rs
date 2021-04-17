@@ -14,7 +14,7 @@ impl SearchResult
     pub fn format(&self) -> String
     {
         // Filename is printed in 'tinygrep::display'
-        let line_num = format!("{}:", self.index).bright_green();
+        let line_num = format!("{}", self.index).bright_green();
 
         // There is no need for pattern matching, we know that the line
         // contains the word

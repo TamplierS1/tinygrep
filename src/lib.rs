@@ -3,14 +3,11 @@
 mod query;
 mod result;
 
-use std::fs;
-use std::io;
-use std::path::Path;
+use std::{fs, io, path::Path, sync::mpsc, thread};
 
 use colored::Colorize;
 
-use query::DirQuery;
-use query::FileQuery;
+use query::{DirQuery, FileQuery};
 use result::SearchResult;
 
 pub fn run(args: &Vec<String>)
@@ -27,7 +24,7 @@ pub fn run(args: &Vec<String>)
     if path.is_dir()
     {
         let query = DirQuery::new(args);
-        results = match search_dir(query)
+        results = match search_dir(query.path, query.search_str)
         {
             Ok(entries) => entries,
             Err(e) => panic!("{}", e),
@@ -48,18 +45,23 @@ pub fn run(args: &Vec<String>)
 
 fn display(results: &Vec<SearchResult>)
 {
-    // Print the first file's name
     if results.is_empty()
     {
         return;
     }
+    else if results.len() == 1
+    {
+        println!("{}", results[0].filename.clone().bright_magenta().italic());
+        println!("{}", results[0].format());
+        return;
+    }
 
     let mut current_file = results[1].filename.clone();
-    println!("{}", results[0].filename.clone().bright_magenta().italic());
 
     for result in results.iter()
     {
-        // And now we compare against the second file's name
+        // Only print filenames if they are different from the
+        // previously printed filename
         if result.filename.ne(&current_file)
         {
             current_file = result.filename.clone();
@@ -82,8 +84,10 @@ fn search_file(search_str: &str, name: &str) -> io::Result<Vec<SearchResult>>
         {
             if word.contains(search_str)
             {
+                // Indexes start from zero
+                // so we need to add 1 to display the correct line numbers
                 let result = SearchResult {
-                    index: i,
+                    index: i + 1,
                     line: String::from(line),
                     search_str: String::from(search_str),
                     filename: String::from(name),
@@ -97,25 +101,45 @@ fn search_file(search_str: &str, name: &str) -> io::Result<Vec<SearchResult>>
     Ok(results)
 }
 
-fn search_dir(query: DirQuery) -> io::Result<Vec<SearchResult>>
+fn search_dir(search_path: &Path, search_str: &str) -> io::Result<Vec<SearchResult>>
 {
     let mut results: Vec<SearchResult> = Vec::new();
 
-    for entry in fs::read_dir(query.path)?
+    let (tx, rx) = mpsc::channel();
+
+    for entry in fs::read_dir(search_path)?
     {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir()
+        let str_to_search = search_str.to_owned();
+        // Create new transmitter for every searched file
+        let new_tx = tx.clone();
+
+        let sender = thread::spawn(move || {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir()
+            {
+                new_tx
+                    .send(search_dir(&path, str_to_search.as_str()).unwrap())
+                    .unwrap();
+            }
+            else
+            {
+                new_tx
+                    .send(
+                        search_file(str_to_search.as_str(), path.as_os_str().to_str().unwrap())
+                            .unwrap(),
+                    )
+                    .unwrap();
+            }
+        });
+
+        match rx.recv()
         {
-            results.append(&mut search_dir(query.clone())?);
+            Ok(mut msg) => results.append(&mut msg),
+            Err(_) => (), // No more messages are coming
         }
-        else
-        {
-            results.append(&mut search_file(
-                query.search_str,
-                path.as_os_str().to_str().unwrap(),
-            )?);
-        }
+
+        sender.join().unwrap();
     }
 
     Ok(results)
