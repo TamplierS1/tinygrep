@@ -3,27 +3,27 @@
 mod query;
 mod result;
 
-use std::{fs, io, path::Path, sync::mpsc, thread};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+    sync::mpsc,
+    thread,
+};
 
 use colored::Colorize;
 
 use query::{DirQuery, FileQuery};
 use result::SearchResult;
 
-pub fn run(args: &Vec<String>)
+pub fn run(args: &Vec<String>) -> Result<(), String>
 {
-    let path = Path::new(&args[2]);
-
-    if !path.exists()
-    {
-        panic!("Error: {} does not exist.", path.display());
-    }
+    let path = check_args(args)?;
 
     let mut results: Vec<SearchResult> = Vec::new();
 
     if path.is_dir()
     {
-        let query = DirQuery::new(args);
+        let query = DirQuery::new(args)?;
         results = match search_dir(query.path, query.search_str)
         {
             Ok(entries) => entries,
@@ -32,7 +32,7 @@ pub fn run(args: &Vec<String>)
     }
     else if path.is_file()
     {
-        let query = FileQuery::new(args);
+        let query = FileQuery::new(args)?;
         results = match search_file(query.search_str, query.name)
         {
             Ok(entries) => entries,
@@ -41,6 +41,8 @@ pub fn run(args: &Vec<String>)
     }
 
     display(&results);
+
+    Ok(())
 }
 
 fn display(results: &Vec<SearchResult>)
@@ -143,4 +145,24 @@ fn search_dir(search_path: &Path, search_str: &str) -> io::Result<Vec<SearchResu
     }
 
     Ok(results)
+}
+
+fn check_args(args: &Vec<String>) -> Result<PathBuf, String>
+{
+    if args.len() != 3
+    {
+        return Err(format!(
+            "Error: {} arguments were provided when 3 are required.",
+            args.len()
+        ));
+    }
+
+    let path = Path::new(&args[2]);
+
+    if !path.exists()
+    {
+        return Err(format!("Error: {} does not exist.", path.to_str().unwrap()));
+    }
+
+    Ok(path.to_owned())
 }
