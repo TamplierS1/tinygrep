@@ -5,6 +5,7 @@
 ## Dependencies
 
 - [colored](https://crates.io/crates/colored) - 2.0.0 - colored terminal output.
+- [twoway](https://crates.io/crates/twoway) - 0.2.1 - faster string searches.
 
 ## Usage
 
