@@ -1,10 +1,11 @@
 ## tinygrep
 
-`tinygrep` is a simple Rust implementation of `grep`. `tinygrep` is nowhere near as powerful as `grep` and is built only in an educational purpose.
+`tinygrep` is a simple Rust implementation of grep. `tinygrep` is about 2.5 times slower than grep.
 
 ## Dependencies
 
 - [colored](https://crates.io/crates/colored) - 2.0.0 - colored terminal output.
+- [twoway](https://crates.io/crates/twoway) - 0.2.1 - faster string searches.
 
 ## Usage
 

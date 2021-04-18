@@ -19,7 +19,7 @@ pub fn run(args: &Vec<String>) -> Result<(), String>
 {
     let path = check_args(args)?;
 
-    let mut results: Vec<SearchResult> = Vec::new();
+    let mut results = Vec::new();
 
     if path.is_dir()
     {
@@ -53,20 +53,20 @@ fn display(results: &Vec<SearchResult>)
     }
     else if results.len() == 1
     {
-        println!("{}", results[0].filename.clone().bright_magenta().italic());
+        println!("{}", &results[0].filename.bright_magenta().italic());
         println!("{}", results[0].format());
         return;
     }
 
-    let mut current_file = results[1].filename.clone();
+    let mut current_file = &results[1].filename;
 
-    for result in results.iter()
+    for result in results
     {
         // Only print filenames if they are different from the
         // previously printed filename
-        if result.filename.ne(&current_file)
+        if result.filename.ne(current_file)
         {
-            current_file = result.filename.clone();
+            current_file = &result.filename;
             println!("{}", current_file.bright_magenta().italic());
         }
 
@@ -77,26 +77,22 @@ fn display(results: &Vec<SearchResult>)
 fn search_file(search_str: &str, name: &str) -> io::Result<Vec<SearchResult>>
 {
     let contents = fs::read_to_string(name)?;
-    let mut results: Vec<SearchResult> = Vec::new();
-    let search_str = search_str;
+    let mut results = Vec::new();
 
-    for (i, line) in contents.split('\n').enumerate()
+    for (i, line) in contents.lines().enumerate()
     {
-        for word in line.split(' ')
+        if twoway::find_str(line.as_ref(), search_str) != None
         {
-            if word.contains(search_str)
-            {
-                // Indexes start from zero
-                // so we need to add 1 to display the correct line numbers
-                let result = SearchResult {
-                    index: i + 1,
-                    line: String::from(line),
-                    search_str: String::from(search_str),
-                    filename: String::from(name),
-                };
+            // Indexes start from zero
+            // so we need to add 1 to display the correct line numbers
+            let result = SearchResult {
+                index: i + 1,
+                line: String::from(line),
+                search_str: String::from(search_str),
+                filename: String::from(name),
+            };
 
-                results.push(result);
-            }
+            results.push(result);
         }
     }
 
@@ -105,7 +101,7 @@ fn search_file(search_str: &str, name: &str) -> io::Result<Vec<SearchResult>>
 
 fn search_dir(search_path: &Path, search_str: &str) -> io::Result<Vec<SearchResult>>
 {
-    let mut results: Vec<SearchResult> = Vec::new();
+    let mut results = Vec::new();
 
     let (tx, rx) = mpsc::channel();
 
